@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:args/command_runner.dart';
-import 'package:path/path.dart' as p;
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as p;
 
 import 'common.dart';
 
