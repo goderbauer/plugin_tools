@@ -20,7 +20,7 @@ class FormatCommand extends Command<Null> {
     argParser.addFlag('travis', hide: true);
     argParser.addOption('clang-format',
         defaultsTo: 'clang-format',
-        help: 'Path to executable of clan-format 3.');
+        help: 'Path to executable of clang-format 3.');
   }
 
   final Directory packagesDir;
@@ -40,8 +40,8 @@ class FormatCommand extends Command<Null> {
     await _formatObjectiveC();
 
     if (argResults['travis']) {
-      final bool success = await _didModifyAnything();
-      if (!success) {
+      final bool modified = await _didModifyAnything();
+      if (modified) {
         throw new ToolExit(1);
       }
     }
@@ -56,7 +56,7 @@ class FormatCommand extends Command<Null> {
 
     if (modifiedFiles.stdout.isEmpty) {
       print('All files formatted correctly.');
-      return true;
+      return false;
     }
 
     final ProcessResult diff = await Process.run(
@@ -72,7 +72,7 @@ class FormatCommand extends Command<Null> {
     print('\nTo fix run "pub global activate flutter_plugin_tools && '
         'pub global run flutter_plugin_tools format".');
 
-    return false;
+    return true;
   }
 
   Future<Null> _formatObjectiveC() async {
