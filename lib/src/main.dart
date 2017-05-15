@@ -8,7 +8,7 @@ import 'package:args/command_runner.dart';
 import 'package:path/path.dart' as p;
 
 import 'analyze_command.dart';
-import 'build_command.dart';
+import 'build_examples_command.dart';
 import 'common.dart';
 import 'format_command.dart';
 import 'test_command.dart';
@@ -26,13 +26,15 @@ void main(List<String> args) {
     }
   }
 
-  new CommandRunner('pub global run flutter_plugin_tools',
+  final CommandRunner<Null> commandRunner = new CommandRunner<Null>(
+      'pub global run flutter_plugin_tools',
       'Productivity utils for hosting multiple plugins within one repository.')
     ..addCommand(new TestCommand(packagesDir))
     ..addCommand(new AnalyzeCommand(packagesDir))
     ..addCommand(new FormatCommand(packagesDir))
-    ..addCommand(new BuildCommand(packagesDir))
-    ..run(args).catchError((ToolExit e) {
-      exit(e.exitCode);
-    }, test: (e) => e is ToolExit);
+    ..addCommand(new BuildExamplesCommand(packagesDir));
+
+  commandRunner.run(args).catchError((ToolExit e) {
+    exit(e.exitCode);
+  }, test: (Object e) => e is ToolExit);
 }

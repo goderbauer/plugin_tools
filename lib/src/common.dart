@@ -14,7 +14,7 @@ class ToolExit extends Error {
 
 Future<int> runAndStream(
     String executable, List<String> args, Directory workingDir) async {
-  Process process =
+  final Process process =
       await Process.start(executable, args, workingDirectory: workingDir.path);
   stdout.addStream(process.stdout);
   stderr.addStream(process.stderr);

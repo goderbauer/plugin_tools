@@ -9,15 +9,19 @@ import 'package:args/command_runner.dart';
 
 import 'common.dart';
 
-class AnalyzeCommand extends Command {
+class AnalyzeCommand extends Command<Null> {
   AnalyzeCommand(this.packagesDir);
 
   final Directory packagesDir;
 
-  final name = 'analyze';
-  final description = 'Analyzes all packages.';
+  @override
+  final String name = 'analyze';
 
-  Future run() async {
+  @override
+  final String description = 'Analyzes all packages.';
+
+  @override
+  Future<Null> run() async {
     print('TODO(goderbauer): Implement command when '
         'https://github.com/flutter/flutter/issues/10015 is resolved.');
     throw new ToolExit(1);

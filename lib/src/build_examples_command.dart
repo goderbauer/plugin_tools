@@ -10,26 +10,31 @@ import 'package:path/path.dart' as p;
 
 import 'common.dart';
 
-class BuildCommand extends Command {
-  BuildCommand(this.packagesDir) {
+class BuildExamplesCommand extends Command<Null> {
+  BuildExamplesCommand(this.packagesDir) {
     argParser.addFlag('ipa', defaultsTo: Platform.isMacOS);
     argParser.addFlag('apk');
   }
 
   final Directory packagesDir;
 
-  final name = 'build';
-  final description = 'Builds all example apps.';
+  @override
+  final String name = 'build-examples';
 
-  Future run() async {
-    List<String> failingPackages = <String>[];
+  @override
+  final String description = 'Builds all example apps.';
+
+  @override
+  Future<Null> run() async {
+    final List<String> failingPackages = <String>[];
     for (Directory example in _getExamplePackages(packagesDir)) {
-      String packageName = p.relative(example.path, from: packagesDir.path);
+      final String packageName =
+          p.relative(example.path, from: packagesDir.path);
 
       if (argResults['ipa']) {
         print('\nBUILDING IPA for $packageName');
-        int exitCode = await runAndStream(
-            'flutter', ['build', 'ios', '--no-codesign'], example);
+        final int exitCode = await runAndStream(
+            'flutter', <String>['build', 'ios', '--no-codesign'], example);
         if (exitCode != 0) {
           failingPackages.add('$packageName (ipa)');
         }
@@ -37,7 +42,8 @@ class BuildCommand extends Command {
 
       if (argResults['apk']) {
         print('\nBUILDING APK for $packageName');
-        int exitCode = await runAndStream('flutter', ['build', 'apk'], example);
+        final int exitCode =
+            await runAndStream('flutter', <String>['build', 'apk'], example);
         if (exitCode != 0) {
           failingPackages.add('$packageName (apk)');
         }
@@ -48,9 +54,9 @@ class BuildCommand extends Command {
 
     if (failingPackages.isNotEmpty) {
       print('The following build are failing (see above for details):');
-      failingPackages.forEach((String package) {
+      for (String package in failingPackages) {
         print(' * $package');
-      });
+      }
       throw new ToolExit(1);
     }
 
@@ -58,9 +64,12 @@ class BuildCommand extends Command {
   }
 
   Iterable<Directory> _getExamplePackages(Directory dir) => dir
-      .listSync(recursive: true)
-      .where((FileSystemEntity entity) =>
-          entity is Directory && p.basename(entity.path) == 'example')
-      .where((Directory dir) => dir.listSync().any((FileSystemEntity entity) =>
-          entity is File && p.basename(entity.path) == 'pubspec.yaml'));
+          .listSync(recursive: true)
+          .where((FileSystemEntity entity) =>
+              entity is Directory && p.basename(entity.path) == 'example')
+          .where((FileSystemEntity entity) {
+        final Directory dir = entity;
+        return dir.listSync().any((FileSystemEntity entity) =>
+            entity is File && p.basename(entity.path) == 'pubspec.yaml');
+      });
 }

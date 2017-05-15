@@ -10,26 +10,31 @@ import 'package:path/path.dart' as p;
 
 import 'common.dart';
 
-class TestCommand extends Command {
+class TestCommand extends Command<Null> {
   TestCommand(this.packagesDir);
 
   final Directory packagesDir;
 
-  final name = 'test';
-  final description = 'Runs the tests for all packages.';
+  @override
+  final String name = 'test';
 
-  Future run() async {
-    List<String> failingPackages = <String>[];
-    for (Directory packageDir in _listAllPackages(packagesDir)) {
-      String packageName = p.relative(packageDir.path, from: packagesDir.path);
+  @override
+  final String description = 'Runs the Dart tests for all packages.';
+
+  @override
+  Future<Null> run() async {
+    final List<String> failingPackages = <String>[];
+    await for (Directory packageDir in _listAllPackages(packagesDir)) {
+      final String packageName =
+          p.relative(packageDir.path, from: packagesDir.path);
       if (!new Directory(p.join(packageDir.path, 'test')).existsSync()) {
         print('\nSKIPPING $packageName - no test subdirectory');
         continue;
       }
 
       print('\nRUNNING $packageName tests...');
-      int exitCode =
-          await runAndStream('flutter', ['test', '--color'], packageDir);
+      final int exitCode = await runAndStream(
+          'flutter', <String>['test', '--color'], packageDir);
       if (exitCode != 0) {
         failingPackages.add(packageName);
       }
@@ -47,8 +52,8 @@ class TestCommand extends Command {
     print('All tests are passing!');
   }
 
-  Iterable<Directory> _listAllPackages(Directory root) => root
-      .listSync(recursive: true)
+  Stream<Directory> _listAllPackages(Directory root) => root
+      .list(recursive: true)
       .where((FileSystemEntity entity) =>
           entity is File && p.basename(entity.path) == 'pubspec.yaml')
       .map((FileSystemEntity entity) => entity.parent);

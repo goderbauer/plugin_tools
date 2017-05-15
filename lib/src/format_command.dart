@@ -15,35 +15,41 @@ import 'common.dart';
 const String _googleFormatterUrl =
     'https://github.com/google/google-java-format/releases/download/google-java-format-1.3/google-java-format-1.3-all-deps.jar';
 
-class FormatCommand extends Command {
+class FormatCommand extends Command<Null> {
   FormatCommand(this.packagesDir) {
     argParser.addFlag('travis', hide: true);
-    argParser.addOption('clang-format', defaultsTo: 'clang-format');
+    argParser.addOption('clang-format',
+        defaultsTo: 'clang-format',
+        help: 'Path to executable of clan-format 3.');
   }
 
   final Directory packagesDir;
 
-  final name = 'format';
-  final description = 'Formats the code of all packages.';
+  @override
+  final String name = 'format';
 
-  Future run() async {
-    String googleFormatterPath = await _getGogleFormatterPath();
+  @override
+  final String description = 'Formats the code of all packages.';
 
-    _formatDart();
-    _formatJava(googleFormatterPath);
-    _formatObjectiveC();
+  @override
+  Future<Null> run() async {
+    final String googleFormatterPath = await _getGogleFormatterPath();
+
+    await _formatDart();
+    await _formatJava(googleFormatterPath);
+    await _formatObjectiveC();
 
     if (argResults['travis']) {
-      bool success = _printSummary();
+      final bool success = await _didModifyAnything();
       if (!success) {
         throw new ToolExit(1);
       }
     }
   }
 
-  bool _printSummary() {
-    ProcessResult modifiedFiles = Process.runSync(
-        'git', ['ls-files', '--modified'],
+  Future<bool> _didModifyAnything() async {
+    final ProcessResult modifiedFiles = await Process.run(
+        'git', <String>['ls-files', '--modified'],
         workingDirectory: packagesDir.path);
 
     print('\n\n');
@@ -53,7 +59,8 @@ class FormatCommand extends Command {
       return true;
     }
 
-    ProcessResult diff = Process.runSync('git', ['diff', '--color'],
+    final ProcessResult diff = await Process.run(
+        'git', <String>['diff', '--color'],
         workingDirectory: packagesDir.path);
     print(diff.stdout);
 
@@ -68,26 +75,28 @@ class FormatCommand extends Command {
     return false;
   }
 
-  void _formatObjectiveC() {
+  Future<Null> _formatObjectiveC() async {
     print('Formatting all .m and .h files...');
-    Iterable<String> hFiles = _getFilesWithExtension(packagesDir, '.h');
-    Iterable<String> mFiles = _getFilesWithExtension(packagesDir, '.m');
-    Process.runSync(argResults['clang-format'],
-        ['-i', '--style=Google']..addAll(hFiles)..addAll(mFiles),
+    final Iterable<String> hFiles = _getFilesWithExtension(packagesDir, '.h');
+    final Iterable<String> mFiles = _getFilesWithExtension(packagesDir, '.m');
+    await Process.run(argResults['clang-format'],
+        <String>['-i', '--style=Google']..addAll(hFiles)..addAll(mFiles),
         workingDirectory: packagesDir.path);
   }
 
-  void _formatJava(String googleFormaterPath) {
+  Future<Null> _formatJava(String googleFormatterPath) async {
     print('Formatting all .java files...');
-    Iterable<String> javaFiles = _getFilesWithExtension(packagesDir, '.java');
-    Process.runSync(
-        'java', ['-jar', googleFormaterPath, '--replace']..addAll(javaFiles),
+    final Iterable<String> javaFiles =
+        _getFilesWithExtension(packagesDir, '.java');
+    await Process.run('java',
+        <String>['-jar', googleFormatterPath, '--replace']..addAll(javaFiles),
         workingDirectory: packagesDir.path);
   }
 
-  void _formatDart() {
+  Future<Null> _formatDart() async {
     print('Formatting all .dart files...');
-    Process.runSync('flutter', ['format'], workingDirectory: packagesDir.path);
+    await Process.run('flutter', <String>['format'],
+        workingDirectory: packagesDir.path);
   }
 
   Iterable<String> _getFilesWithExtension(Directory dir, String extension) =>
@@ -98,13 +107,14 @@ class FormatCommand extends Command {
           .map((FileSystemEntity entity) => entity.path);
 
   Future<String> _getGogleFormatterPath() async {
-    String javaFormatterPath = p.join(p.dirname(p.fromUri(Platform.script)),
+    final String javaFormatterPath = p.join(
+        p.dirname(p.fromUri(Platform.script)),
         'google-java-format-1.3-all-deps.jar');
-    File javaFormatterFile = new File(javaFormatterPath);
+    final File javaFormatterFile = new File(javaFormatterPath);
 
     if (!javaFormatterFile.existsSync()) {
       print('Downloading Google Java Format...');
-      http.Response response = await http.get(_googleFormatterUrl);
+      final http.Response response = await http.get(_googleFormatterUrl);
       javaFormatterFile.writeAsBytesSync(response.bodyBytes);
     }
 
